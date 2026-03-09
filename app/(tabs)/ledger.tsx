@@ -2,12 +2,13 @@
  * City Ledger Tab — Staff spending tracker with premium UI.
  * Chunky progress bar, outlet breakdown, date-grouped transactions.
  */
-import { View, Text, StyleSheet, ScrollView, Animated, ActivityIndicator, RefreshControl, TouchableOpacity, Modal, TextInput, Switch, Alert, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Modal, TextInput, Switch, Alert, Platform, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLedger, useSaveLedgerSettings, LedgerTransaction } from '../../src/hooks/useLedger';
 import { useState, useEffect, useCallback } from 'react';
 import { theme } from '../../src/theme/theme';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolate } from 'react-native-reanimated';
 
 export default function LedgerScreen() {
     const [selectedMonth, setSelectedMonth] = useState<string | undefined>(undefined);
@@ -15,7 +16,7 @@ export default function LedgerScreen() {
     const saveMutation = useSaveLedgerSettings();
     const [selectedTx, setSelectedTx] = useState<LedgerTransaction | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [progress] = useState(new Animated.Value(0));
+    const progress = useSharedValue(0);
     const [showSettings, setShowSettings] = useState(false);
     const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [settingsLimit, setSettingsLimit] = useState('');
@@ -41,15 +42,17 @@ export default function LedgerScreen() {
         }
     }, [ledger?.limit_settings]);
 
+    const progressBarStyle = useAnimatedStyle(() => ({
+        width: `${interpolate(progress.value, [0, 100], [0, 100])}%`,
+    }));
+
     useEffect(() => {
         if (ledger && ledger.credit_limit > 0) {
             const pct = (ledger.current_balance / ledger.credit_limit) * 100;
-            Animated.spring(progress, {
-                toValue: Math.min(pct, 100),
+            progress.value = withSpring(Math.min(pct, 100), {
                 damping: 15,
                 stiffness: 80,
-                useNativeDriver: false,
-            }).start();
+            });
         }
     }, [ledger, progress]);
 
@@ -281,11 +284,8 @@ export default function LedgerScreen() {
                                 styles.progressFill,
                                 {
                                     backgroundColor: percentUsed > 90 ? theme.colors.danger : percentUsed > 70 ? theme.colors.orange : theme.colors.white,
-                                    width: progress.interpolate({
-                                        inputRange: [0, 100],
-                                        outputRange: ['0%', '100%'],
-                                    }),
                                 },
+                                progressBarStyle,
                             ]}
                         />
                     </View>

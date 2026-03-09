@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useNotifications, useMarkNotificationRead, useMarkAllRead, NotificationItem } from '../../src/hooks/useNotifications';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -11,24 +12,6 @@ export default function NotificationsScreen() {
     const markAsRead = useMarkNotificationRead();
     const markAllRead = useMarkAllRead();
     const router = useRouter();
-
-    if (isLoading) {
-        return (
-            <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color={Colors.brandTeal} />
-            </View>
-        );
-    }
-
-    if (isError) {
-        return (
-            <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>Failed to load notifications.</Text>
-            </View>
-        );
-    }
-
-    const unreadCount = notifications?.filter(n => !n.read_at).length || 0;
 
     const handlePress = (item: NotificationItem) => {
         if (!item.read_at) {
@@ -59,7 +42,7 @@ export default function NotificationsScreen() {
         }
     };
 
-    const renderNotification = ({ item }: { item: NotificationItem }) => {
+    const renderNotification = useCallback(({ item }: { item: NotificationItem }) => {
         let iconName: any = 'bell-outline';
         let iconColor: string = Colors.primaryDark;
         let iconBg: string = Colors.surface;
@@ -116,7 +99,25 @@ export default function NotificationsScreen() {
                 )}
             </AnimatedPressable>
         );
-    };
+    }, [markAsRead, router]);
+
+    if (isLoading) {
+        return (
+            <View style={styles.centerContainer}>
+                <ActivityIndicator size="large" color={Colors.brandTeal} />
+            </View>
+        );
+    }
+
+    if (isError) {
+        return (
+            <View style={styles.centerContainer}>
+                <Text style={styles.errorText}>Failed to load notifications.</Text>
+            </View>
+        );
+    }
+
+    const unreadCount = notifications?.filter(n => !n.read_at).length || 0;
 
     return (
         <View style={CommonStyles.screenContainer}>
@@ -135,7 +136,7 @@ export default function NotificationsScreen() {
                 }}
             />
 
-            <FlatList
+            <FlashList
                 data={notifications}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderNotification}

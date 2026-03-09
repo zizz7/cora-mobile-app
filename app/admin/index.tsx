@@ -2,11 +2,12 @@
  * Admin Settings Screen — User management & system controls.
  * Accessible to Admin/Super Admin only via More menu.
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
+    View, Text, StyleSheet, TextInput, TouchableOpacity,
     ActivityIndicator, Alert, Modal, ScrollView,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdminUsers, useUpdateUser, useResetPassword, useToggleUserStatus, AdminUser, UpdateUserPayload } from '../../src/hooks/useAdmin';
@@ -111,7 +112,7 @@ export default function AdminScreen() {
         );
     };
 
-    const renderUser = ({ item }: { item: AdminUser }) => {
+    const renderUser = useCallback(({ item }: { item: AdminUser }) => {
         const isActive = item.status === 'active';
         return (
             <TouchableOpacity style={styles.userCard} onPress={() => openEditModal(item)} activeOpacity={0.7}>
@@ -136,7 +137,7 @@ export default function AdminScreen() {
                 </View>
             </TouchableOpacity>
         );
-    };
+    }, []);
 
     if (isLoading) {
         return (
@@ -206,7 +207,7 @@ export default function AdminScreen() {
             </View>
 
             {/* User List */}
-            <FlatList
+            <FlashList
                 data={filteredUsers}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderUser}

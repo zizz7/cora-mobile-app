@@ -2,7 +2,8 @@
  * Profile Screen — Premium hero with stats bar, clean contact list, toggle preferences.
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView, Platform, Image, Switch } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView, Platform, Switch } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/context/AuthContext';
 import { useUpdateProfile, useUpdateProfilePhoto } from '../../src/hooks/useProfile';

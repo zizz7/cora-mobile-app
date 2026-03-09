@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useEvents, Event } from '../../src/hooks/useEvents';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -26,7 +27,7 @@ export default function EventsScreen() {
         );
     }
 
-    const renderEvent = ({ item }: { item: Event }) => {
+    const renderEvent = useCallback(({ item }: { item: Event }) => {
         const remainingSpots = item.max_participants - item.current_participants;
         const isFull = remainingSpots <= 0;
 
@@ -65,14 +66,14 @@ export default function EventsScreen() {
                 </View>
             </TouchableOpacity>
         );
-    };
+    }, [router]);
 
     return (
         <View style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
             <PillHeader title="Team Events" />
 
-            <FlatList
+            <FlashList
                 data={events}
                 keyExtractor={(item) => item.event_id.toString()}
                 renderItem={renderEvent}

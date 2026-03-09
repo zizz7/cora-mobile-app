@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, StatusBar, Modal, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, StatusBar, Modal, TextInput, TouchableOpacity } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { usePendingGatePasses, useApproveGatePass } from '../../src/hooks/useGatePasses';
 import { useAuth } from '../../src/context/AuthContext';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -65,7 +66,7 @@ export default function GatePassApprovalsScreen() {
         );
     }
 
-    const renderApprovalItem = ({ item }: { item: any }) => {
+    const renderApprovalItem = useCallback(({ item }: { item: any }) => {
         return (
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
@@ -118,7 +119,7 @@ export default function GatePassApprovalsScreen() {
                 </View>
             </View>
         );
-    };
+    }, [approveMutation]);
 
     return (
         <View style={styles.container}>
@@ -126,7 +127,7 @@ export default function GatePassApprovalsScreen() {
             <Stack.Screen options={{ headerShown: false }} />
             <PillHeader title="Gate Pass Approvals" />
 
-            <FlatList
+            <FlashList
                 data={pendingApprovals}
                 keyExtractor={(item) => item.gatepass_id.toString()}
                 renderItem={renderApprovalItem}

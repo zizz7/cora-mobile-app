@@ -10,15 +10,15 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../src/context/AuthContext';
+import { secureStorage } from '../src/utils/secureStorage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { theme } from '../src/theme/theme';
 
 const { width, height } = Dimensions.get('window');
-const REMEMBER_KEY = 'remember_credentials';
+const REMEMBER_KEY = 'remember_user_id';
 
 // 1. Static Particles Background
 const ParticleField = () => {
@@ -142,12 +142,23 @@ export default function LoginScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const saved = await SecureStore.getItemAsync(REMEMBER_KEY);
-        if (saved) {
-          const { user_id, password: savedPwd } = JSON.parse(saved);
-          setUserId(user_id || '');
-          setPassword(savedPwd || '');
+        const savedUserId = await secureStorage.getItem(REMEMBER_KEY);
+        if (savedUserId) {
+          setUserId(savedUserId);
           setRememberMe(true);
+        }
+        // Migration: remove old format that stored raw passwords
+        const oldData = await secureStorage.getItem('remember_credentials');
+        if (oldData) {
+          try {
+            const { user_id } = JSON.parse(oldData);
+            if (user_id && !savedUserId) {
+              setUserId(user_id);
+              setRememberMe(true);
+              await secureStorage.setItem(REMEMBER_KEY, user_id);
+            }
+          } catch { }
+          await secureStorage.deleteItem('remember_credentials');
         }
       } catch { }
 
@@ -189,9 +200,9 @@ export default function LoginScreen() {
     try {
       await signIn({ user_id: userId.trim(), password });
       if (rememberMe) {
-        await SecureStore.setItemAsync(REMEMBER_KEY, JSON.stringify({ user_id: userId.trim(), password }));
+        await secureStorage.setItem(REMEMBER_KEY, userId.trim());
       } else {
-        await SecureStore.deleteItemAsync(REMEMBER_KEY);
+        await secureStorage.deleteItem(REMEMBER_KEY);
       }
     } catch (error: any) {
       triggerShake();

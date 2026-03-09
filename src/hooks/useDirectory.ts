@@ -34,6 +34,11 @@ export const useDirectory = () => {
             const data = await api.get('/mobile/directory');
             return data as unknown as DirectoryResponse;
         },
+        retry: (failureCount, error: any) => {
+            const status = error?.status || error?.response?.status;
+            if (status === 403) return false;
+            return failureCount < 2;
+        },
     });
 };
 

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useCalendar, CalendarActivity } from '../../src/hooks/useCalendar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
@@ -8,28 +9,8 @@ export default function CalendarScreen() {
     const { data: activities, isLoading, isError } = useCalendar();
     const [selectedView, setSelectedView] = useState<'All' | 'Shift' | 'Duty' | 'Event'>('All');
 
-    if (isLoading) {
-        return (
-            <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#0A2540" />
-            </View>
-        );
-    }
 
-    if (isError) {
-        return (
-            <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>Failed to load calendar.</Text>
-            </View>
-        );
-    }
-
-    const filteredActivities = activities?.filter(act => {
-        if (selectedView === 'All') return true;
-        return act.type === selectedView;
-    }) || [];
-
-    const renderActivity = ({ item }: { item: CalendarActivity }) => {
+    const renderActivity = useCallback(({ item }: { item: CalendarActivity }) => {
         let typeColor = '#6B7280';
         let iconName: any = 'calendar';
 
@@ -80,7 +61,28 @@ export default function CalendarScreen() {
                 </View>
             </View>
         );
-    };
+    }, []);
+
+    if (isLoading) {
+        return (
+            <View style={styles.centerContainer}>
+                <ActivityIndicator size="large" color="#0A2540" />
+            </View>
+        );
+    }
+
+    if (isError) {
+        return (
+            <View style={styles.centerContainer}>
+                <Text style={styles.errorText}>Failed to load calendar.</Text>
+            </View>
+        );
+    }
+
+    const filteredActivities = activities?.filter(act => {
+        if (selectedView === 'All') return true;
+        return act.type === selectedView;
+    }) || [];
 
     return (
         <View style={styles.container}>
@@ -101,7 +103,7 @@ export default function CalendarScreen() {
                 ))}
             </View>
 
-            <FlatList
+            <FlashList
                 data={filteredActivities}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderActivity}

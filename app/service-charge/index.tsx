@@ -2,7 +2,7 @@
  * Service Charge Screen — Premium financial view.
  * Full-bleed hero bleeding under status bar, transparent nav, fluid minimal layout.
  */
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Platform, Animated, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Polyline, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
@@ -94,7 +94,7 @@ export default function ServiceChargeScreen() {
         }).join(' ');
     })();
 
-    const renderRecord = ({ item, index }: { item: ServiceCharge; index: number }) => {
+    const renderRecord = useCallback(({ item, index }: { item: ServiceCharge; index: number }) => {
         const [yearPart, monthPart] = item.month.split('-');
         const dateObj = new Date(Number.parseInt(yearPart), Number.parseInt(monthPart) - 1);
         const monthStr = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
@@ -151,7 +151,7 @@ export default function ServiceChargeScreen() {
                 </View>
             </View>
         );
-    };
+    }, [records]);
 
     return (
         <View style={styles.container}>

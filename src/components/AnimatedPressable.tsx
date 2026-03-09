@@ -1,5 +1,10 @@
 import React from 'react';
-import { Pressable, PressableProps, Animated, ViewStyle, StyleProp } from 'react-native';
+import { Pressable, PressableProps, ViewStyle, StyleProp } from 'react-native';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+} from 'react-native-reanimated';
 
 const AnimatedPressableComponent = Animated.createAnimatedComponent(Pressable);
 
@@ -7,37 +12,35 @@ interface AnimatedPressableProps extends PressableProps {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
     scaleTo?: number;
-    duration?: number;
 }
 
 export default function AnimatedPressable({
     children,
     style,
     scaleTo = 0.95,
-    duration = 150,
     onPressIn,
     onPressOut,
     ...props
 }: AnimatedPressableProps) {
-    const scaleValue = React.useRef(new Animated.Value(1)).current;
+    const scale = useSharedValue(1);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+    }));
 
     const handlePressIn = (e: any) => {
-        Animated.spring(scaleValue, {
-            toValue: scaleTo,
-            useNativeDriver: true,
-            speed: 50,
-            bounciness: 10,
-        }).start();
+        scale.value = withSpring(scaleTo, {
+            damping: 15,
+            stiffness: 150,
+        });
         if (onPressIn) onPressIn(e);
     };
 
     const handlePressOut = (e: any) => {
-        Animated.spring(scaleValue, {
-            toValue: 1,
-            useNativeDriver: true,
-            speed: 50,
-            bounciness: 10,
-        }).start();
+        scale.value = withSpring(1, {
+            damping: 15,
+            stiffness: 150,
+        });
         if (onPressOut) onPressOut(e);
     };
 
@@ -45,7 +48,7 @@ export default function AnimatedPressable({
         <AnimatedPressableComponent
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
-            style={[style, { transform: [{ scale: scaleValue }] }]}
+            style={[style, animatedStyle]}
             {...props as any}
         >
             {children}

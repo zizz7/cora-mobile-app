@@ -13,10 +13,10 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Image,
   Platform,
   StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';

@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useTransportLog, TransportTrip } from '../src/hooks/useTransportTrips';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -75,7 +76,7 @@ export default function TransportScreen() {
         </View>
     );
 
-    const renderTrip = ({ item }: { item: TransportTrip }) => (
+    const renderTrip = useCallback(({ item }: { item: TransportTrip }) => (
         <View style={styles.card}>
             <View style={styles.cardHeader}>
                 <Text style={styles.routeText}>{item.route}</Text>
@@ -106,14 +107,14 @@ export default function TransportScreen() {
                 <Text style={styles.remarksText}>{item.remarks}</Text>
             ) : null}
         </View>
-    );
+    ), []);
 
     return (
         <View style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
             <PillHeader title="Transport Log" />
 
-            <FlatList
+            <FlashList
                 data={trips}
                 renderItem={renderTrip}
                 keyExtractor={item => item.id.toString()}

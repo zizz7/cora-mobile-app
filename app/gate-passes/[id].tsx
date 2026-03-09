@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useGatePasses } from '../../src/hooks/useGatePasses';
+import { useGatePass } from '../../src/hooks/useGatePasses';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -12,9 +12,9 @@ const getStatusColor = (status: string) => {
 
 export default function GatePassDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useGatePasses();
+  const { data } = useGatePass(Number(id));
   
-  const pass = data?.data?.data?.find((p: any) => p.gatepass_id === parseInt(id));
+  const pass = data?.data;
 
   if (!pass) {
     return (

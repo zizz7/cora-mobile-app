@@ -1,0 +1,4 @@
+app/gate-passes/[id].tsx(17,22): error TS2339: Property 'data' does not exist on type 'InfiniteData<GatePassResponse, unknown>'.
+app/gate-passes/index.tsx(18,24): error TS2339: Property 'data' does not exist on type 'InfiniteData<GatePassResponse, unknown>'.
+app/gate-passes/new.tsx(58,9): error TS2322: Type '{ quantity: number; description: string; unit: string; }[]' is not assignable to type 'GatePassItem[]'.
+  Type '{ quantity: number; description: string; unit: string; }' is missing the following properties from type 'GatePassItem': item_description, reason, estimated_return_date

@@ -5,11 +5,11 @@ import { useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter, Stack } from 'expo-router';
 import { useExitPasses } from '../../src/hooks/useExitPasses';
 import { useAuth } from '../../src/context/AuthContext';
@@ -122,7 +122,7 @@ export default function ExitPassesScreen() {
           <Text style={styles.emptySubtext}>Create your first request</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={passes}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}

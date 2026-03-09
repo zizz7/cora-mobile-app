@@ -1,7 +1,8 @@
 /**
  * More / Menu Screen — Bento grid layout with gradient featured cards.
  */
-import { View, Text, StyleSheet, ScrollView, Image, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, StatusBar } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';

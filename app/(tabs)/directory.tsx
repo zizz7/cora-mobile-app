@@ -2,8 +2,10 @@
  * Directory Screen — Staff directory with role-based filtering.
  * HODs see own department; Admins see everyone.
  */
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
+import { FlashList } from '@shopify/flash-list';
 import { useDirectory, Employee } from '../../src/hooks/useDirectory';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, router } from 'expo-router';
@@ -20,6 +22,66 @@ export default function DirectoryScreen() {
     const [searchQuery, setSearchQuery] = useState('');
 
     // Department-based filtering: Admins see all, HODs/Managers see own department
+    const getInitials = (name: string) => {
+        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    };
+
+    const renderBirthday = useCallback(({ item }: { item: Employee }) => (
+        <AnimatedPressable
+            style={styles.birthdayCard}
+            onPress={() => router.push(`/employee/${item.user_id}`)}
+        >
+            <View style={styles.birthdayAvatarContainer}>
+                {item.avatar_url ? (
+                    <Image source={{ uri: item.avatar_url }} style={styles.birthdayAvatar} />
+                ) : (
+                    <View style={[styles.birthdayAvatar, styles.avatarPlaceholder]}>
+                        <Text style={styles.avatarTextSm}>{getInitials(item.name)}</Text>
+                    </View>
+                )}
+                <View style={styles.birthdayBadge}>
+                    <MaterialCommunityIcons name="cake-variant" size={10} color="#FFF" />
+                </View>
+            </View>
+            <Text style={styles.birthdayName} numberOfLines={1}>{item.name.split(' ')[0]}</Text>
+            <Text style={styles.birthdayDate}>
+                {item.date_of_birth ? new Date(item.date_of_birth).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
+            </Text>
+        </AnimatedPressable>
+    ), []);
+
+    const renderEmployee = useCallback(({ item }: { item: Employee }) => (
+        <AnimatedPressable
+            style={styles.card}
+            onPress={() => router.push(`/employee/${item.user_id}`)}
+        >
+            <View style={styles.avatarContainer}>
+                {item.avatar_url ? (
+                    <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+                ) : (
+                    <View style={styles.avatarPlaceholder}>
+                        <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.infoContainer}>
+                <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.position} numberOfLines={1}>{item.position}</Text>
+
+                <View style={styles.departmentBadge}>
+                    <Text style={styles.departmentText}>{item.department}</Text>
+                </View>
+            </View>
+
+            <View style={styles.actionContainer}>
+                <TouchableOpacity style={styles.iconButton}>
+                    <MaterialCommunityIcons name="phone-outline" size={20} color={theme.colors.teal} />
+                </TouchableOpacity>
+            </View>
+        </AnimatedPressable>
+    ), []);
+
     const employees = useMemo(() => {
         const all = directoryData?.directory?.data || [];
         if (!user) return all;
@@ -57,66 +119,6 @@ export default function DirectoryScreen() {
         emp.position.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const getInitials = (name: string) => {
-        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    };
-
-    const renderBirthday = ({ item }: { item: Employee }) => (
-        <AnimatedPressable
-            style={styles.birthdayCard}
-            onPress={() => router.push(`/employee/${item.user_id}`)}
-        >
-            <View style={styles.birthdayAvatarContainer}>
-                {item.avatar_url ? (
-                    <Image source={{ uri: item.avatar_url }} style={styles.birthdayAvatar} />
-                ) : (
-                    <View style={[styles.birthdayAvatar, styles.avatarPlaceholder]}>
-                        <Text style={styles.avatarTextSm}>{getInitials(item.name)}</Text>
-                    </View>
-                )}
-                <View style={styles.birthdayBadge}>
-                    <MaterialCommunityIcons name="cake-variant" size={10} color="#FFF" />
-                </View>
-            </View>
-            <Text style={styles.birthdayName} numberOfLines={1}>{item.name.split(' ')[0]}</Text>
-            <Text style={styles.birthdayDate}>
-                {item.date_of_birth ? new Date(item.date_of_birth).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
-            </Text>
-        </AnimatedPressable>
-    );
-
-    const renderEmployee = ({ item }: { item: Employee }) => (
-        <AnimatedPressable
-            style={styles.card}
-            onPress={() => router.push(`/employee/${item.user_id}`)}
-        >
-            <View style={styles.avatarContainer}>
-                {item.avatar_url ? (
-                    <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
-                ) : (
-                    <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
-                    </View>
-                )}
-            </View>
-
-            <View style={styles.infoContainer}>
-                <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.position} numberOfLines={1}>{item.position}</Text>
-
-                <View style={styles.departmentBadge}>
-                    <Text style={styles.departmentText}>{item.department}</Text>
-                </View>
-            </View>
-
-            <View style={styles.actionContainer}>
-                <TouchableOpacity style={styles.iconButton}>
-                    <MaterialCommunityIcons name="phone-outline" size={20} color={theme.colors.teal} />
-                </TouchableOpacity>
-            </View>
-        </AnimatedPressable>
-    );
-
     const departmentLabel = user && !ADMIN_ROLES.has(user.role_name)
         ? `${user.department} — ${filteredEmployees.length} staff`
         : `All Departments — ${filteredEmployees.length} staff`;
@@ -150,7 +152,7 @@ export default function DirectoryScreen() {
                 )}
             </View>
 
-            <FlatList
+            <FlashList
                 data={filteredEmployees}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderEmployee}

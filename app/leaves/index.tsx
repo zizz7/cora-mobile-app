@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useLeaves, LeaveRequest } from '../../src/hooks/useLeaves';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -26,7 +27,7 @@ export default function LeavesScreen() {
         );
     }
 
-    const renderLeave = ({ item }: { item: LeaveRequest }) => {
+    const renderLeave = useCallback(({ item }: { item: LeaveRequest }) => {
         let statusColor = '#6B7280';
         let statusBg = '#F3F4F6';
         let iconName: any = 'clock-outline';
@@ -84,14 +85,14 @@ export default function LeavesScreen() {
                 ) : null}
             </View>
         );
-    };
+    }, []);
 
     return (
         <View style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
             <PillHeader title="Leave Requests" />
 
-            <FlatList
+            <FlashList
                 data={leaves}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderLeave}

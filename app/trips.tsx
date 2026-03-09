@@ -1,8 +1,9 @@
 /**
  * Trips Screen — Rich trip cards with color strips, filter bar, capacity avatars.
  */
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useTrips, Trip } from '../src/hooks/useTrips';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -51,7 +52,7 @@ export default function TripsScreen() {
         );
     }
 
-    const renderTrip = ({ item }: { item: Trip }) => {
+    const renderTrip = useCallback(({ item }: { item: Trip }) => {
         const remainingSpots = item.max_participants - item.current_participants;
         const isFull = remainingSpots <= 0;
         const isAlmostFull = !isFull && remainingSpots <= 3;
@@ -148,7 +149,7 @@ export default function TripsScreen() {
                 </View>
             </TouchableOpacity>
         );
-    };
+    }, [router]);
 
     return (
         <View style={styles.container}>
@@ -169,7 +170,7 @@ export default function TripsScreen() {
                 ))}
             </View>
 
-            <FlatList
+            <FlashList
                 data={filteredTrips}
                 keyExtractor={(item) => item.trip_id.toString()}
                 renderItem={renderTrip}

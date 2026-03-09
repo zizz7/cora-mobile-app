@@ -1,11 +1,16 @@
 /**
  * FeedCard — Individual feed item component.
+ *
+ * Improvements:
+ * - Image loading fix: resizeMode="contain" with dynamic aspect ratio for single images
+ * - Width calculation corrected: width - 32 (card padding only)
+ * - Double-tap uses useRef instead of useState (no unnecessary re-renders)
+ * - Wrapped in React.memo for FlatList performance
  */
-import { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
@@ -15,6 +20,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { FontAwesome5, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import type { FeedItem } from '../types/feed';
 import { theme } from '../theme/theme';
@@ -52,9 +58,12 @@ const SourceIcon = ({ source, size = 18, color = '#fff' }: { source: string, siz
   }
 };
 
-export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardProps) {
+function FeedCardInner({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardProps) {
   const { width } = useWindowDimensions();
-  const [lastTap, setLastTap] = useState<number | null>(null);
+
+  // Use useRef for double-tap detection — avoids unnecessary re-renders
+  const lastTapRef = useRef<number | null>(null);
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showHeart, setShowHeart] = useState(false);
 
   const isExternal = item.type === 'external_review';
@@ -66,6 +75,9 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
 
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const { mutate: translateText, isPending: isTranslating } = useTranslate();
+
+  // Track image aspect ratios for dynamic sizing
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(16 / 9);
 
   const handleTranslate = () => {
     if (translatedText) {
@@ -84,24 +96,31 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
     });
   };
 
-  const handleTap = () => {
+  const handleTap = useCallback(() => {
     const now = Date.now();
+    const lastTap = lastTapRef.current;
+
     if (lastTap && now - lastTap < 300) {
-      // Double tap detected
+      // Double tap detected — cancel pending single tap
+      if (singleTapTimer.current) {
+        clearTimeout(singleTapTimer.current);
+        singleTapTimer.current = null;
+      }
       onDoubleTap();
       setShowHeart(true);
       setTimeout(() => setShowHeart(false), 800);
-      setLastTap(null);
+      lastTapRef.current = null;
     } else {
-      setLastTap(now);
+      lastTapRef.current = now;
       // Single tap after delay
-      setTimeout(() => {
-        if (lastTap === now) {
+      singleTapTimer.current = setTimeout(() => {
+        if (lastTapRef.current === now) {
           onPress();
         }
+        singleTapTimer.current = null;
       }, 300);
     }
-  };
+  }, [onDoubleTap, onPress]);
 
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -111,6 +130,9 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
     setLightboxVisible(true);
   };
 
+  // Calculate content width: screen width minus card horizontal padding (16 * 2 = 32)
+  const contentWidth = width - 32;
+
   const renderMediaGrid = () => {
     if (!item.media_urls?.length) return null;
 
@@ -118,16 +140,36 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
     const remaining = item.media_urls.length - 4;
 
     if (images.length === 1) {
+      // Calculate height based on aspect ratio, with min/max bounds
+      const calculatedHeight = contentWidth / imageAspectRatio;
+      const imageHeight = Math.max(150, Math.min(calculatedHeight, 400));
+
       return (
         <TouchableOpacity onPress={() => openLightbox(0)} activeOpacity={0.9}>
           <Image
             source={{ uri: images[0] }}
-            style={[styles.singleImage, { width: width - 80 }]}
-            resizeMode="cover"
+            style={[
+              styles.singleImage,
+              {
+                width: contentWidth,
+                height: imageHeight,
+              },
+            ]}
+            contentFit="contain"
+            onLoad={(e: any) => {
+              const w = e?.source?.width;
+              const h = e?.source?.height;
+              if (w > 0 && h > 0) {
+                setImageAspectRatio(w / h);
+              }
+            }}
           />
         </TouchableOpacity>
       );
     }
+
+    // Grid width: content width minus gap between images
+    const gridImageSize = (contentWidth - 4) / 2;
 
     return (
       <View style={styles.imageGrid}>
@@ -138,10 +180,10 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
             activeOpacity={0.9}
             style={[
               styles.gridImage,
-              { width: (width - 90) / 2, height: (width - 90) / 2 },
+              { width: gridImageSize, height: gridImageSize },
             ]}
           >
-            <Image source={{ uri: url }} style={styles.gridImageInner} resizeMode="cover" />
+            <Image source={{ uri: url }} style={styles.gridImageInner} contentFit="cover" />
             {idx === 3 && remaining > 0 && (
               <View style={styles.moreOverlay}>
                 <Text style={styles.moreText}>+{remaining}</Text>
@@ -181,7 +223,7 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
                 key={idx}
                 source={{ uri: url }}
                 style={{ width: screenW, height: screenH * 0.75 }}
-                resizeMode="contain"
+                contentFit="contain"
               />
             ))}
           </ScrollView>
@@ -207,7 +249,6 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
 
   const renderRatingDots = (rating: number | undefined) => {
     if (!rating) return null;
-    // Assume rating is out of 10 or 5. Let's normalize to 5 dots for visual consistency.
     const normalized = rating > 5 ? Math.round(rating / 2) : Math.round(rating);
     return (
       <View style={{ flexDirection: 'row', marginTop: 6, marginBottom: 8 }}>
@@ -307,8 +348,6 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
   const renderMentionCard = () => {
     const meta = item.meta as any;
 
-    // Prefer structured leaderboard data from meta (contains ALL employees)
-    // Fall back to parsing body text for older posts
     let parsedMentions: { raw: string; name: string; dept: string; count: number }[];
 
     if (meta?.leaderboard && Array.isArray(meta.leaderboard) && meta.leaderboard.length > 0) {
@@ -337,11 +376,9 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
     const totalMentions = meta?.total_mentions || parsedMentions.reduce((sum, m) => sum + m.count, 0);
     const maxCount = parsedMentions.length > 0 ? parsedMentions[0].count : 1;
 
-    // Extract title/date range info
     const periodLabel = meta?.period_label || '';
     const dateRange = periodLabel || (item.body || '').split('\n')[0].replace(/TripAdvisor Mentions logged for\s*/i, '').replace(/:$/, '');
 
-    // Render dots (like the web): green for top 3, light blue for rest
     const renderDots = (count: number, isTop3: boolean) => {
       const maxDots = 6;
       const filledDots = Math.max(1, Math.round((count / maxCount) * maxDots));
@@ -369,7 +406,6 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
 
     return (
       <View style={styles.mentionContainer}>
-        {/* Green Header Banner (matching web) */}
         <View style={styles.mentionBanner}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
             <FontAwesome5 name="tripadvisor" size={16} color="#fff" style={{ marginRight: 8 }} />
@@ -378,7 +414,6 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
           <Text style={styles.mentionBannerDate}>{dateRange}</Text>
         </View>
 
-        {/* Scrollable Ranked List */}
         <ScrollView
           style={styles.mentionScrollList}
           nestedScrollEnabled
@@ -414,7 +449,6 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
           })}
         </ScrollView>
 
-        {/* Footer Stats */}
         <View style={styles.mentionFooter}>
           <View style={styles.mentionFooterItem}>
             <Ionicons name="people-outline" size={14} color="#6B7280" />
@@ -499,7 +533,7 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
               )}
             </View>
             <Text style={styles.authorMeta}>
-              {isExternal ? formatDate(item.created_at) : (item.author.department || 'Staff' + ' • ' + formatDate(item.created_at))}
+              {isExternal ? formatDate(item.created_at) : (item.author.department || 'Staff') + ' • ' + formatDate(item.created_at)}
             </Text>
           </View>
         </View>
@@ -568,6 +602,9 @@ export function FeedCard({ item, onDoubleTap, onPress, onJoinTrip }: FeedCardPro
     </TouchableOpacity>
   );
 }
+
+// Wrap in React.memo to prevent unnecessary re-renders in FlatList
+export const FeedCard = React.memo(FeedCardInner);
 
 const styles = StyleSheet.create({
   card: {
@@ -716,9 +753,9 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   singleImage: {
-    height: 200,
-    borderRadius: 8,
+    borderRadius: 12,
     marginTop: 12,
+    backgroundColor: '#F3F4F6',
   },
   imageGrid: {
     flexDirection: 'row',
@@ -758,25 +795,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  heart: {
-    fontSize: 16,
-  },
   reactionCount: {
     fontSize: 14,
     fontWeight: '600',
     color: '#6b7280',
     marginLeft: 6,
-  },
-  reactedBadge: {
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  reactedText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#dc2626',
   },
   heartOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -908,6 +931,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  // Mention Styles
   mentionContainer: {
     marginTop: 8,
   },

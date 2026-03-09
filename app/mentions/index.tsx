@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Linking, TouchableOpacity } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Linking, TouchableOpacity } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useMentions, Mention, useTranslate } from '../../src/hooks/useMentions';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
@@ -114,7 +115,7 @@ export default function MentionsScreen() {
         );
     };
 
-    const renderMention = ({ item }: { item: Mention }) => <MentionCard item={item} />;
+    const renderMention = useCallback(({ item }: { item: Mention }) => <MentionCard item={item} />, []);
 
     return (
         <View style={styles.container}>
@@ -127,7 +128,7 @@ export default function MentionsScreen() {
                 <Text style={styles.heroSubtitle}>Recent mentions of our wonderful staff on TripAdvisor</Text>
             </View>
 
-            <FlatList
+            <FlashList
                 data={mentions}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderMention}

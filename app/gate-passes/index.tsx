@@ -1,4 +1,6 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useGatePasses } from '../../src/hooks/useGatePasses';
 
@@ -14,9 +16,9 @@ export default function GatePassesScreen() {
   const router = useRouter();
   const { data, isLoading } = useGatePasses();
 
-  const passes = data?.data?.data || [];
+  const passes = data?.pages?.flatMap(page => page.data) || [];
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = useCallback(({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => router.push(`/gate-passes/${item.gatepass_id}`)}
@@ -30,7 +32,7 @@ export default function GatePassesScreen() {
       <Text style={styles.ref}>{item.reference_type}: {item.reference_value}</Text>
       <Text style={styles.items}>{item.items?.length || 0} items</Text>
     </TouchableOpacity>
-  );
+  ), [router]);
 
   return (
     <View style={styles.container}>
@@ -49,7 +51,7 @@ export default function GatePassesScreen() {
           <Text>No gate passes yet</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={passes}
           keyExtractor={(i) => i.gatepass_id.toString()}
           renderItem={renderItem}

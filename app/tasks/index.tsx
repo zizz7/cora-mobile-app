@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useTasks, Task } from '../../src/hooks/useTasks';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
@@ -31,7 +32,7 @@ export default function TasksScreen() {
         return task.status === filter;
     }) || [];
 
-    const renderTask = ({ item }: { item: Task }) => {
+    const renderTask = useCallback(({ item }: { item: Task }) => {
         const isCompleted = item.status === 'Completed';
 
         let priorityColor = '#10B981'; // Low
@@ -80,7 +81,7 @@ export default function TasksScreen() {
                 </View>
             </View>
         );
-    };
+    }, []);
 
     return (
         <View style={styles.container}>
@@ -102,7 +103,7 @@ export default function TasksScreen() {
                 ))}
             </View>
 
-            <FlatList
+            <FlashList
                 data={filteredTasks}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderTask}

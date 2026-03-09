@@ -4,8 +4,9 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    Image, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar,
+    ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';

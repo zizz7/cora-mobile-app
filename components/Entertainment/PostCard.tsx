@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, Dimensions, Pressable, TouchableOpacity } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { View, Text, StyleSheet, Dimensions, Pressable, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
+import { VideoPlayer } from '../../src/components/VideoPlayer';
 import { theme } from '../../src/theme/theme';
 import { ReactionButton } from './ReactionAnimations';
 import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
@@ -91,18 +92,18 @@ export const PostCard: React.FC<PostCardProps> = ({
             {hasMedia && (
                 <View style={styles.mediaContainer}>
                     {isVideo ? (
-                        <Video
-                            source={{ uri: post.media_url }}
+                        <VideoPlayer
+                            uri={post.media_url}
                             style={styles.media}
-                            useNativeControls
-                            resizeMode={ResizeMode.COVER}
-                            isLooping
+                            loop
+                            nativeControls
+                            contentFit="cover"
                         />
                     ) : (
                         <Image
                             source={{ uri: post.media_url }}
                             style={styles.media}
-                            resizeMode="cover"
+                            contentFit="cover"
                         />
                     )}
                 </View>

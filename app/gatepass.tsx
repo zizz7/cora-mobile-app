@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useGatePasses, GatePass } from '../src/hooks/useGatePasses';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -50,7 +51,7 @@ export default function GatePassScreen() {
         );
     };
 
-    const renderPass = ({ item }: { item: GatePass }) => {
+    const renderPass = useCallback(({ item }: { item: GatePass }) => {
         return (
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
@@ -77,14 +78,14 @@ export default function GatePassScreen() {
                 </View>
             </View>
         );
-    };
+    }, []);
 
     return (
         <View style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
             <PillHeader title="Gate Passes" />
 
-            <FlatList
+            <FlashList
                 data={passes}
                 renderItem={renderPass}
                 keyExtractor={item => item.gatepass_id.toString()}

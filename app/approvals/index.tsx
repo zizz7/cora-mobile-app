@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, StatusBar } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, StatusBar } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useExitPasses, useApproveExitPass } from '../../src/hooks/useExitPasses';
 import { useAuth } from '../../src/context/AuthContext';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -76,7 +77,7 @@ export default function ApprovalsScreen() {
         );
     }
 
-    const renderApprovalItem = ({ item }: { item: any }) => {
+    const renderApprovalItem = useCallback(({ item }: { item: any }) => {
         return (
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
@@ -133,7 +134,7 @@ export default function ApprovalsScreen() {
                 </View>
             </View>
         );
-    };
+    }, [approveMutation, user]);
 
     return (
         <View style={styles.container}>
@@ -141,7 +142,7 @@ export default function ApprovalsScreen() {
             <Stack.Screen options={{ headerShown: false }} />
             <PillHeader title="Approvals Inbox" />
 
-            <FlatList
+            <FlashList
                 data={pendingApprovals}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderApprovalItem}

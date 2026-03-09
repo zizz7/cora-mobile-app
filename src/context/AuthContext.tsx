@@ -1,9 +1,14 @@
 /**
  * Authentication Context for Cora Cora Portal Mobile App.
  * Manages login, logout, token persistence via SecureStore, and auto-login on mount.
+ *
+ * Improvements:
+ * - Listens for 401 "unauthorized" events from api.ts to auto-logout
+ * - Unregisters device push token on logout
+ * - Prevents duplicate logout calls
  */
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { api, saveToken, getToken, deleteToken } from '../utils/api';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { api, saveToken, getToken, deleteToken, onUnauthorized } from '../utils/api';
 import { registerForPushNotificationsAsync, registerDeviceToken } from '../utils/notifications';
 import type { User, AuthResponse, LoginCredentials } from '../types';
 
@@ -29,6 +34,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading: true,
     isAuthenticated: false,
   });
+
+  // Guard against multiple simultaneous logout calls
+  const isLoggingOut = useRef(false);
+
+  /**
+   * Internal logout helper — clears token and state.
+   * Optionally calls server logout (skipped for 401-triggered logouts).
+   */
+  const performLogout = useCallback(async (callServer: boolean = true) => {
+    if (isLoggingOut.current) return;
+    isLoggingOut.current = true;
+
+    try {
+      // Unregister device push token
+      try {
+        await api.delete('/device-token');
+      } catch {
+        // Ignore — token may already be invalid
+      }
+
+      // Call server logout if requested
+      if (callServer) {
+        try {
+          await api.post('/auth/logout', {});
+        } catch {
+          // Ignore server errors on logout (token may already be expired)
+        }
+      }
+    } finally {
+      await deleteToken();
+      setState({ user: null, token: null, isLoading: false, isAuthenticated: false });
+      isLoggingOut.current = false;
+    }
+  }, []);
+
+  /**
+   * Listen for 401 events from the API client — auto-logout on token expiry.
+   */
+  useEffect(() => {
+    const unsubscribe = onUnauthorized(() => {
+      performLogout(false); // Don't call server — token is already invalid
+    });
+    return unsubscribe;
+  }, [performLogout]);
 
   /**
    * On mount: check SecureStore for an existing token and validate it.
@@ -58,20 +107,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Sign in with email and password.
+   * Sign in with user_id and password.
    */
   const signIn = useCallback(async (credentials: LoginCredentials) => {
     const response = await api.post<AuthResponse>('/auth/login', credentials as unknown as Record<string, unknown>);
     await saveToken(response.token);
 
-    // Register for push notifications
+    // Register for push notifications (non-blocking)
     try {
       const pushToken = await registerForPushNotificationsAsync();
       if (pushToken) {
         await registerDeviceToken(pushToken);
       }
     } catch (e) {
-      console.error('Push notification registration failed', e);
+      console.warn('Push notification registration failed:', e);
     }
 
     setState({
@@ -83,20 +132,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Directly authenticate with an existing token and user object 
+   * Directly authenticate with an existing token and user object
    * (e.g., after a password reset).
    */
   const authenticateWithToken = useCallback(async (token: string, user: User) => {
     await saveToken(token);
 
-    // Register for push notifications
+    // Register for push notifications (non-blocking)
     try {
       const pushToken = await registerForPushNotificationsAsync();
       if (pushToken) {
         await registerDeviceToken(pushToken);
       }
     } catch (e) {
-      console.error('Push notification registration failed', e);
+      console.warn('Push notification registration failed:', e);
     }
 
     setState({
@@ -108,17 +157,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Sign out: revoke token on server and clear local storage.
+   * Sign out: unregister device token, revoke token on server, and clear local storage.
    */
   const signOut = useCallback(async () => {
-    try {
-      await api.post('/auth/logout', {});
-    } catch {
-      // Ignore server errors on logout (token may already be expired)
-    }
-    await deleteToken();
-    setState({ user: null, token: null, isLoading: false, isAuthenticated: false });
-  }, []);
+    await performLogout(true);
+  }, [performLogout]);
 
   return (
     <AuthContext.Provider value={{ ...state, signIn, signOut, authenticateWithToken }}>

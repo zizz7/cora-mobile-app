@@ -54,10 +54,18 @@ export default function NewGatePassScreen() {
 
     try {
       await createMutation.mutateAsync({
-        ...form,
+        reference_type: form.reference_type as 'PO Number' | 'Reference Number',
+        reference_value: form.reference_value,
+        supplier_business_name: form.supplier_business_name,
+        supplier_contact: form.supplier_contact,
+        supplier_contact_person: '',
+        total_packages: form.items.length,
         items: form.items.map(i => ({
-          ...i,
+          item_description: i.description,
           quantity: parseFloat(i.quantity) || 1,
+          unit: i.unit,
+          reason: '',
+          estimated_return_date: new Date().toISOString().split('T')[0],
         })),
       });
       Alert.alert('Success', 'Gate pass created', [

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Modal, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Video, ResizeMode } from 'expo-av';
+import { VideoPlayer } from '../../src/components/VideoPlayer';
 import { theme } from '../../src/theme/theme';
 import { API_BASE_URL, getToken } from '../../src/utils/api';
 import Animated, { SlideInDown, SlideOutDown, FadeIn, FadeOut } from 'react-native-reanimated';
@@ -136,17 +137,17 @@ export const CommentsSheet: React.FC<CommentsSheetProps> = ({ visible, postId, c
                         {item.media_url && (
                             <View style={styles.mediaContainer}>
                                 {isVideo ? (
-                                    <Video
-                                        source={{ uri: item.media_url }}
+                                    <VideoPlayer
+                                        uri={item.media_url}
                                         style={styles.media}
-                                        useNativeControls
-                                        resizeMode={ResizeMode.COVER}
+                                        nativeControls
+                                        contentFit="cover"
                                     />
                                 ) : (
                                     <Image
                                         source={{ uri: item.media_url }}
                                         style={styles.media}
-                                        resizeMode="cover"
+                                        contentFit="cover"
                                     />
                                 )}
                             </View>
